@@ -1,0 +1,6 @@
+## Interface: 11503
+## Title: EqualLootDistributor
+## Notes: Help distribute loot evenly
+## Author: Ikatzuki
+
+EqualLootDistributor.lua
