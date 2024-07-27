@@ -1,7 +1,10 @@
 ## Interface: 11503
-## Title: EqualLootDistributor
-## Notes: Help distribute loot evenly
+## Title: Equal Loot Distributor
+## Notes: An addon to help distribute loot equally.
 ## Author: Ikatzuki
-## SavedVariables: EqualLootDistributorBlacklistDB
+## SavedVariables: EqualLootDistributorDB, EqualLootDistributorBlacklistDB
 
-EqualLootDistributor.lua
+main.lua
+blacklist.lua
+linking.lua
+utils.lua
