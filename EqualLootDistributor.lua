@@ -34,6 +34,8 @@ end)
 
 frame:Hide()
 
+local blacklistedItems = {}
+
 -- Header
 local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 title:SetPoint("TOP", 0, -10)
@@ -102,10 +104,12 @@ local function updateItemList()
                 local itemLink = itemInfo.hyperlink
                 local itemCount = itemInfo.stackCount
                 local itemName = GetItemInfo(itemLink)
-                if items[itemName] then
-                    items[itemName].count = items[itemName].count + itemCount
-                else
-                    items[itemName] = {name = itemName, count = itemCount, link = itemLink}
+                if not blacklistedItems[itemName] then
+                    if items[itemName] then
+                        items[itemName].count = items[itemName].count + itemCount
+                    else
+                        items[itemName] = {name = itemName, count = itemCount, link = itemLink}
+                    end
                 end
             end
         end
@@ -138,6 +142,25 @@ local distributeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplat
 distributeButton:SetSize(100, 30)
 distributeButton:SetPoint("BOTTOM", 0, 20)  -- Adjusted position for more space
 distributeButton:SetText("Distribute")
+
+-- Add Blacklist Items Button
+local blacklistButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+blacklistButton:SetSize(120, 30)
+blacklistButton:SetPoint("LEFT", distributeButton, "RIGHT", 10, 0)
+blacklistButton:SetText("Blacklist Items")
+
+-- Function to handle blacklisting items
+blacklistButton:SetScript("OnClick", function()
+    for _, row in ipairs(itemListContent.items) do
+        if row:GetChecked() then
+            local itemName = GetItemInfo(row.itemLink)
+            blacklistedItems[itemName] = true
+        end
+    end
+
+    updateItemList()
+    updateLinkItemList()
+end)
 
 -- Add Link Items Button
 local linkItemsButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
@@ -197,10 +220,12 @@ local function updateLinkItemList()
                 local itemLink = itemInfo.hyperlink
                 local itemCount = itemInfo.stackCount
                 local itemName = GetItemInfo(itemLink)
-                if items[itemName] then
-                    items[itemName].count = items[itemName].count + itemCount
-                else
-                    items[itemName] = {name = itemName, count = itemCount, link = itemLink}
+                if not blacklistedItems[itemName] then
+                    if items[itemName] then
+                        items[itemName].count = items[itemName].count + itemCount
+                    else
+                        items[itemName] = {name = itemName, count = itemCount, link = itemLink}
+                    end
                 end
             end
         end
@@ -321,6 +346,36 @@ confirmLinkButton:SetScript("OnClick", function()
     end
 
     linkingFrame:Hide()
+end)
+
+-- Function to save the blacklist
+local function SaveBlacklist()
+    EqualLootDistributorBlacklistDB = blacklistedItems
+end
+
+
+-- Function to load the blacklist
+local function LoadBlacklist()
+    if EqualLootDistributorBlacklistDB then
+        blacklistedItems = EqualLootDistributorBlacklistDB
+    else
+        blacklistedItems = {}
+    end
+end
+
+-- Event frame to handle saving and loading
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("PLAYER_LOGOUT")
+eventFrame:RegisterEvent("ADDON_LOADED")
+
+eventFrame:SetScript("OnEvent", function(self, event, arg1)
+    if event == "PLAYER_LOGOUT" then
+        SaveBlacklist()
+    elseif event == "ADDON_LOADED" and arg1 == "EqualLootDistributor" then
+        LoadBlacklist()
+        updateItemList()
+        updateLinkItemList()
+    end
 end)
 
 -- Function to handle distribution

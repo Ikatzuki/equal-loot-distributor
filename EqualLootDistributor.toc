@@ -2,5 +2,6 @@
 ## Title: EqualLootDistributor
 ## Notes: Help distribute loot evenly
 ## Author: Ikatzuki
+## SavedVariables: EqualLootDistributorBlacklistDB
 
 EqualLootDistributor.lua
