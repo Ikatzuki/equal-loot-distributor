@@ -326,39 +326,27 @@ distributeButton:SetScript("OnClick", function()
 
     -- Combine item counts from all stacks and account for linked items
     local itemCounts = {}
-    local linkGroups = {}
-
-    -- Group linked items
-    for _, link in ipairs(linkedItems) do
-        local itemName = GetItemInfo(link)
-        linkGroups[itemName] = linkGroups[itemName] or {}
-        for _, row in ipairs(linkItemListContent.items) do
-            if row.itemLink == link then
-                table.insert(linkGroups[itemName], row.itemLink)
-            end
-        end
-    end
+    local linkedItemsToDistribute = {}
 
     for _, itemLink in ipairs(selectedItems) do
-        local itemName = GetItemInfo(itemLink)
-        local groupKey = linkGroups[itemName] and linkGroups[itemName][1] or itemName
-
         -- Check if it's a linked item group
         if string.match(itemLink, "^Linked Items #") then
             print("Processing linked item group: " .. itemLink)
             local linkedGroup = linkedItemsDetails[itemLink]
             for linkedItemName, linkedItemCount in string.gmatch(linkedGroup, "([^\n]+) x(%d+)") do
                 print("  Linked item: " .. linkedItemName .. ", Count: " .. linkedItemCount)
-                itemCounts[linkedItemName] = itemCounts[linkedItemName] or 0
-                itemCounts[linkedItemName] = itemCounts[linkedItemName] + tonumber(linkedItemCount)
+                for i = 1, tonumber(linkedItemCount) do
+                    table.insert(linkedItemsToDistribute, linkedItemName)
+                end
             end
         else
-            itemCounts[groupKey] = itemCounts[groupKey] or 0
+            local itemName = GetItemInfo(itemLink)
+            itemCounts[itemName] = itemCounts[itemName] or 0
             for bag = 0, 4 do
                 for slot = 1, C_Container.GetContainerNumSlots(bag) do
                     local itemInfo = C_Container.GetContainerItemInfo(bag, slot)
                     if itemInfo and itemInfo.hyperlink == itemLink then
-                        itemCounts[groupKey] = itemCounts[groupKey] + itemInfo.stackCount
+                        itemCounts[itemName] = itemCounts[itemName] + itemInfo.stackCount
                     end
                 end
             end
@@ -376,33 +364,21 @@ distributeButton:SetScript("OnClick", function()
         distribution[i] = {}
     end
 
-    -- Handle distribution for linked items
-    local linkedItemsToDistribute = {}
+    -- Distribute normal items
     for itemName, itemCount in pairs(itemCounts) do
-        if string.match(itemName, "^Linked Items #") then
-            local linkedGroup = linkedItemsDetails[itemName]
-            print("Distributing linked group: " .. itemName)
-            for linkedItemName, linkedItemCount in string.gmatch(linkedGroup, "([^\n]+) x(%d+)") do
-                for i = 1, tonumber(linkedItemCount) do
-                    print("  Adding linked item to distribute: " .. linkedItemName)
-                    table.insert(linkedItemsToDistribute, linkedItemName)
-                end
-            end
-        else
-            local itemsPerPlayer = math.floor(itemCount / playerCount)
-            local leftovers = itemCount % playerCount
+        local itemsPerPlayer = math.floor(itemCount / playerCount)
+        local leftovers = itemCount % playerCount
 
-            print("Items per player: " .. itemsPerPlayer .. ", Leftovers: " .. leftovers)
+        print("Items per player: " .. itemsPerPlayer .. ", Leftovers: " .. leftovers)
 
-            for i = 1, playerCount do
-                table.insert(distribution[i], {name = itemName, count = itemsPerPlayer})
-            end
+        for i = 1, playerCount do
+            table.insert(distribution[i], {name = itemName, count = itemsPerPlayer})
+        end
 
-            -- If there are leftovers, assign them to the organizer (index 0)
-            if leftovers > 0 then
-                distribution[0] = distribution[0] or {}
-                table.insert(distribution[0], {name = itemName, count = leftovers})
-            end
+        -- If there are leftovers, assign them to the organizer (index 0)
+        if leftovers > 0 then
+            distribution[0] = distribution[0] or {}
+            table.insert(distribution[0], {name = itemName, count = leftovers})
         end
     end
 
@@ -500,7 +476,6 @@ distributeButton:SetScript("OnClick", function()
 
     distributionFrame:Show()
 end)
-
 
 -- Slash command to open the addon
 SLASH_EQUALLOOTDISTRIBUTOR1 = "/eld"
