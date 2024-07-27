@@ -391,25 +391,36 @@ distributeButton:SetScript("OnClick", function()
     end
 
     -- Distribute normal items
+    local playerIndex = 1
     for itemName, itemCount in pairs(itemCounts) do
-        local itemsPerPlayer = math.floor(itemCount / playerCount)
-        local leftovers = itemCount % playerCount
+        if itemCount <= playerCount then
+            for i = 1, itemCount do
+                table.insert(distribution[playerIndex], {name = itemName, count = 1})
+                playerIndex = playerIndex + 1
+                if playerIndex > playerCount then
+                    playerIndex = 1
+                end
+            end
+        else
+            local itemsPerPlayer = math.floor(itemCount / playerCount)
+            local leftovers = itemCount % playerCount
 
-        print("Items per player: " .. itemsPerPlayer .. ", Leftovers: " .. leftovers)
+            print("Items per player: " .. itemsPerPlayer .. ", Leftovers: " .. leftovers)
 
-        for i = 1, playerCount do
-            table.insert(distribution[i], {name = itemName, count = itemsPerPlayer})
-        end
+            for i = 1, playerCount do
+                table.insert(distribution[i], {name = itemName, count = itemsPerPlayer})
+            end
 
-        -- If there are leftovers, assign them to the organizer (index 0)
-        if leftovers > 0 then
-            distribution[0] = distribution[0] or {}
-            table.insert(distribution[0], {name = itemName, count = leftovers})
+            -- If there are leftovers, assign them to the organizer (index 0)
+            if leftovers > 0 then
+                distribution[0] = distribution[0] or {}
+                table.insert(distribution[0], {name = itemName, count = leftovers})
+            end
         end
     end
 
     -- Distribute linked items randomly
-    local playerIndex = 1
+    playerIndex = 1
     for _, linkedItem in ipairs(linkedItemsToDistribute) do
         print("Distributing linked item: " .. linkedItem .. " to player " .. playerIndex)
         table.insert(distribution[playerIndex], {name = linkedItem, count = 1})
