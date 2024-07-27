@@ -34,8 +34,6 @@ end)
 
 frame:Hide()
 
-local blacklistedItems = {}
-
 -- Header
 local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 title:SetPoint("TOP", 0, -10)
@@ -143,30 +141,23 @@ distributeButton:SetSize(100, 30)
 distributeButton:SetPoint("BOTTOM", 0, 20)  -- Adjusted position for more space
 distributeButton:SetText("Distribute")
 
--- Add Blacklist Items Button
-local blacklistButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-blacklistButton:SetSize(120, 30)
-blacklistButton:SetPoint("LEFT", distributeButton, "RIGHT", 10, 0)
-blacklistButton:SetText("Blacklist Items")
-
--- Function to handle blacklisting items
-blacklistButton:SetScript("OnClick", function()
-    for _, row in ipairs(itemListContent.items) do
-        if row:GetChecked() then
-            local itemName = GetItemInfo(row.itemLink)
-            blacklistedItems[itemName] = true
-        end
-    end
-
-    updateItemList()
-    updateLinkItemList()
-end)
-
 -- Add Link Items Button
 local linkItemsButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
 linkItemsButton:SetSize(100, 30)
 linkItemsButton:SetPoint("BOTTOM", distributeButton, "TOP", 0, 10)
 linkItemsButton:SetText("Link Items")
+
+-- Add Open Blacklist Button
+local openBlacklistButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+openBlacklistButton:SetSize(120, 30)
+openBlacklistButton:SetPoint("RIGHT", distributeButton, "LEFT", -10, 0)
+openBlacklistButton:SetText("Open Blacklist")
+
+-- Add Blacklist Items Button
+local blacklistButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+blacklistButton:SetSize(120, 30)
+blacklistButton:SetPoint("LEFT", distributeButton, "RIGHT", 10, 0)
+blacklistButton:SetText("Blacklist Items")
 
 -- Create the Linking Frame
 local linkingFrame = CreateFrame("Frame", "LinkingFrame", UIParent, "BackdropTemplate")
@@ -348,11 +339,103 @@ confirmLinkButton:SetScript("OnClick", function()
     linkingFrame:Hide()
 end)
 
+-- Blacklist Frame
+local blacklistFrame = CreateFrame("Frame", "BlacklistFrame", UIParent, "BackdropTemplate")
+blacklistFrame:SetSize(400, 400)
+blacklistFrame:SetPoint("CENTER")
+blacklistFrame:SetMovable(true)
+blacklistFrame:EnableMouse(true)
+blacklistFrame:RegisterForDrag("LeftButton")
+blacklistFrame:SetScript("OnDragStart", blacklistFrame.StartMoving)
+blacklistFrame:SetScript("OnDragStop", blacklistFrame.StopMovingOrSizing)
+blacklistFrame:Hide()
+
+-- Apply backdrop
+blacklistFrame:SetBackdrop({
+    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+    tile = true,
+    tileSize = 32,
+    edgeSize = 32,
+    insets = { left = 11, right = 12, top = 12, bottom = 11 }
+})
+
+-- Blacklist Frame Title
+local blacklistTitle = blacklistFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+blacklistTitle:SetPoint("TOP", 0, -10)
+blacklistTitle:SetText("Blacklisted Items")
+
+-- Close button for Blacklist Frame
+local closeBlacklistButton = CreateFrame("Button", nil, blacklistFrame, "UIPanelCloseButton")
+closeBlacklistButton:SetPoint("TOPRIGHT", -5, -5)
+
+-- Item List Scroll Frame for Blacklist
+local blacklistItemList = CreateFrame("ScrollFrame", nil, blacklistFrame, "UIPanelScrollFrameTemplate")
+blacklistItemList:SetSize(360, 320)
+blacklistItemList:SetPoint("TOPLEFT", 10, -40)
+
+local blacklistItemListContent = CreateFrame("Frame")
+blacklistItemListContent:SetSize(340, 320)
+blacklistItemList:SetScrollChild(blacklistItemListContent)
+
+-- Initialize blacklistItemListContent.items
+blacklistItemListContent.items = {}
+
+-- Function to populate blacklist item list
+local function updateBlacklistItemList()
+    -- Clear previous list
+    for i = #blacklistItemListContent.items, 1, -1 do
+        blacklistItemListContent.items[i]:Hide()
+        table.remove(blacklistItemListContent.items, i)
+    end
+
+    -- Add items to list
+    local i = 0
+    for itemName, _ in pairs(blacklistedItems) do
+        local row = CreateFrame("CheckButton", nil, blacklistItemListContent, "UICheckButtonTemplate")
+        row:SetPoint("TOPLEFT", 0, -20 * i)
+        row.text = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        row.text:SetPoint("LEFT", row, "RIGHT", 5, 0)
+        row.text:SetText(itemName)
+        row.itemName = itemName
+
+        blacklistItemListContent.items = blacklistItemListContent.items or {}
+        table.insert(blacklistItemListContent.items, row)
+        i = i + 1
+    end
+end
+
+openBlacklistButton:SetScript("OnClick", function()
+    updateBlacklistItemList()
+    blacklistFrame:Show()
+end)
+
+closeBlacklistButton:SetScript("OnClick", function()
+    blacklistFrame:Hide()
+end)
+
+-- Add a Button to Remove from Blacklist
+local removeBlacklistButton = CreateFrame("Button", nil, blacklistFrame, "UIPanelButtonTemplate")
+removeBlacklistButton:SetSize(150, 30)
+removeBlacklistButton:SetPoint("BOTTOM", 0, 20)
+removeBlacklistButton:SetText("Remove from Blacklist")
+
+removeBlacklistButton:SetScript("OnClick", function()
+    for _, row in ipairs(blacklistItemListContent.items) do
+        if row:GetChecked() then
+            blacklistedItems[row.itemName] = nil
+        end
+    end
+
+    updateItemList()
+    updateLinkItemList()
+    updateBlacklistItemList()
+end)
+
 -- Function to save the blacklist
 local function SaveBlacklist()
     EqualLootDistributorBlacklistDB = blacklistedItems
 end
-
 
 -- Function to load the blacklist
 local function LoadBlacklist()
@@ -376,6 +459,19 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
         updateItemList()
         updateLinkItemList()
     end
+end)
+
+-- Function to handle blacklisting items
+blacklistButton:SetScript("OnClick", function()
+    for _, row in ipairs(itemListContent.items) do
+        if row:GetChecked() then
+            local itemName = GetItemInfo(row.itemLink)
+            blacklistedItems[itemName] = true
+        end
+    end
+
+    updateItemList()
+    updateLinkItemList()
 end)
 
 -- Function to handle distribution
