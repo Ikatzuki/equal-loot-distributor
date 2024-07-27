@@ -54,6 +54,32 @@ playerCountInput:SetPoint("LEFT", playerCountLabel, "RIGHT", 10, 0)
 playerCountInput:SetAutoFocus(false)
 playerCountInput:SetNumeric(true)
 
+-- Function to clear focus when Enter is pressed
+playerCountInput:SetScript("OnEnterPressed", function(self)
+    self:ClearFocus()
+end)
+
+-- Function to clear focus when clicking outside
+local clickFrame = CreateFrame("Frame", nil, UIParent)
+clickFrame:SetFrameStrata("TOOLTIP")
+clickFrame:SetAllPoints(UIParent)
+clickFrame:EnableMouse(true)
+clickFrame:Hide()
+
+clickFrame:SetScript("OnMouseDown", function(self, button)
+    if button == "LeftButton" and not MouseIsOver(playerCountInput) then
+        playerCountInput:ClearFocus()
+    end
+end)
+
+playerCountInput:SetScript("OnEditFocusGained", function()
+    clickFrame:Show()
+end)
+
+playerCountInput:SetScript("OnEditFocusLost", function()
+    clickFrame:Hide()
+end)
+
 -- Item List Scroll Frame
 local itemList = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
 itemList:SetSize(360, 220)  -- Adjusted width to fit within the UI
